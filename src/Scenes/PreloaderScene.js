@@ -89,6 +89,10 @@ export default class PreloaderScene extends Phaser.Scene {
       this.load.image('blueButton2', assets_image_url + 'logo.png');
       this.load.image('blueButton3', assets_image_url + 'logo.png');
       this.load.audio('bgMusic', [assets_sounds_url + 'TownTheme.mp3']);
+      this.load.svg('tear', assets_image_url + 'tear.svg', {
+         width: 100 * baseConfig.scaleRatio,
+         height: 100 * baseConfig.scaleRatio
+      })
    }
 
    ready () {

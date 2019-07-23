@@ -1,5 +1,6 @@
 import "phaser";
 import baseConfig from "../Config/baseConfig";
+import gameConfig from "../Config/gameConfig";
 
 
 
@@ -11,13 +12,6 @@ export default class GameScene extends Phaser.Scene {
   
    preload () {
       console.log('Enter scene ' + this.scene.key);
-
-      var assets_image_url = baseConfig.assets_url + 'images/';
-
-      this.load.svg('tear', assets_image_url + 'tear.svg', {
-         width: 20,
-         height: 20
-      })
    }
 
    drawGrid(graphics) {
@@ -33,17 +27,56 @@ export default class GameScene extends Phaser.Scene {
   
    create () {
       var path;
-      var centerGrid;
+      // var teardropLeft;
+      var setX = (baseConfig.w / baseConfig.gridY) * 0.5;
+      var step = baseConfig.w / (baseConfig.gridY - 1) + setX;
    
       var grid = this.add.graphics();
       this.drawGrid(grid);
 
-      var teardrops = this.add.group({
-         key: 'tear',
-         repeat: baseConfig.gridY - 1,
-         setXY: { x: 50, y: 10, stepX: baseConfig.w / baseConfig.gridY }
-      });
+      this.addTears();
+
+      // teardropLeft = this.physics.add.group({
+      //    key: 'tear',
+      //    repeat: baseConfig.gridY - 2,
+      //    setXY: { x: setX, y: 10, stepX: step }
+      // });
    }
 
-   
+   addTears(){
+      this.tearsGroup = this.physics.add.group()
+      for(let i = 0; i < 10; i++){
+          this.tearsPool = [this.tearsGroup.create(0, 0, "tear")];
+          this.dropTears();
+      }
+      this.tearsGroup.setVelocityY(gameConfig.tearSpeed);
+   }
+
+   getTopmostTear(){
+      let topmostTear = game.config.height;
+      this.tearsGroup.getChildren().forEach(function(tear){
+          topmostTear = Math.min(topmostTear, tear.y)
+      });
+      return topmostTear;
+   }
+
+   dropTears(){
+      let topmost = this.getTopmostTear();
+      let holePosition = Phaser.Math.Between(1, gameConfig.safeZones - 1);
+      this.tearsPool[0].x = holePosition * game.config.width / gameConfig.safeZones;
+      this.tearsPool[0].y = topmost - gameConfig.tearGap;
+      this.tearsPool[0].setOrigin(0.5, 0.5);
+      this.tearsPool = [];
+   }
+
+   update(){
+      this.tearsGroup.getChildren().forEach(function(tear){
+         if(tear.y > game.config.height){
+               this.tearsPool.push(tear);
+               if(this.tearsPool.length == 2){
+                  this.dropTears();
+               }
+         }
+      }, this);
+   }
 };
