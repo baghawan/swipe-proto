@@ -2,7 +2,7 @@
    "main": "src/index.js",
    "scripts": {
       "build": "webpack --config webpack/prod.js ",
-      "start": "webpack-dev-server --config webpack/base.js --open "
+      "start": "webpack-dev-server --host 172.16.10.8 --config webpack/base.js --open "
    },
    "devDependencies": {
       "@babel/core": "^7.2.2",
@@ -19,6 +19,8 @@
       "webpack-merge": "^4.2.1"
    },
    "dependencies": {
-      "phaser": "^3.3.0"
+      "phaser": "^3.3.0",
+      "phaser3-swipe": "^1.0.0",
+      "phaser3-swipe-plugin": "^1.0.6"
    }
 }

@@ -20,6 +20,8 @@ export default class BootScene extends Phaser.Scene {
             scale: (1 * .75) * baseConfig.scaleRatio // actual svg size discale 0.75 lalu dikali device pixel ratio
          }
       });
+
+      console.log(baseConfig.gameParent.clientHeight)
    }
   
    create () {
