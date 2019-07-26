@@ -12,14 +12,6 @@ class Game extends Phaser.Game {
       this.scene.add('Preloader', PreloaderScene);
       this.scene.add('Game', GameScene);
       this.scene.start('Boot');
-
-      // scene.scale.on('orientationchange', function(orientation) {
-      //    if (orientation === Phaser.Scale.PORTRAIT) {
-      //       console.log('portrait');
-      //    } else if (orientation === Phaser.Scale.LANDSCAPE) {
-      //        // ...
-      //    }
-      // });
    }
    
    

@@ -24,21 +24,21 @@ export default class GameScene extends Phaser.Scene {
       }
       
       graphics.strokePath();
+      graphics.setDepth(1);
    }
-  
-   create () {
-      var grid = this.add.graphics();
-      // this.drawGrid(grid);
 
+   setText(){
       levelText = this.add.text(30, 40, 'Level: ' + gameConfig.level, { fontSize: 14 * window.devicePixelRatio + 'px', fill: '#000' });
       scoreText = this.add.text(baseConfig.w - 230, 30, gameConfig.score + 'pts', { fontSize: 14 * window.devicePixelRatio + 'px', fill: '#000' });
 
       scoreText.setFixedSize(200, 45);
       scoreText.setAlign('right');
+   }
 
+   checkOrientation(){
       // check screen orientation
       window.addEventListener('orientationchange', function(){
-         if (screen.orientation.type === "landscape-primary" || screen.orientation.type === "landscape-secondary") {
+         if (Math.abs(window.orientation) === 90 || Math.abs(window.orientation) === -90) {
             // resume game on landscape
             document.body.classList.add('game-paused');
             game.scene.pause(this);
@@ -49,14 +49,12 @@ export default class GameScene extends Phaser.Scene {
             
          }
       }.bind(this));
-
-      this.addTears();
-      this.checkSwipe();
    }
    
    checkSwipe(){
       this.input.on('gameobjectmove', function(pointer, tear, event){
          tear.disableBody(true, true);
+         console.log(tear)
 
          if (this.scene.tearsGroup.countActive() === 0){
             console.log('Level ' + gameConfig.level + ' completed !');
@@ -79,14 +77,33 @@ export default class GameScene extends Phaser.Scene {
 		});
    }
 
+   addStaticImages(){
+      this.bg = this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, 'background');
+      this.character = this.add.image(this.cameras.main.centerX, this.cameras.main.centerY + 100, 'character');
+
+      let scaleCharacterX = this.cameras.main.width / this.character.width
+      let scaleCharacterY = this.cameras.main.height / this.character.height
+
+      let scaleBgX = this.cameras.main.width / this.bg.width
+      let scaleBgY = this.cameras.main.height / this.bg.height
+
+
+      this.character.setScale(Math.max(scaleCharacterX, scaleCharacterY)).setScrollFactor(0);
+      this.bg.setScale(Math.max(scaleBgX, scaleBgY)).setScrollFactor(0);
+   }
+
    addTears(){
       console.log('Entering Level: ' + gameConfig.level);
 
       this.tearsGroup = this.physics.add.group();
+      
 
       for(let i = 0; i < 5; i++){
-          this.tearsPool = [this.tearsGroup.create(0, 0, "tear").setInteractive()];
-          this.dropTears();
+         this.singleTear = this.tearsGroup.create(0, 0, "tear").setInteractive();
+         this.singleTear.input.hitArea.setTo(this.singleTear.width / 2, this.singleTear.height / 2, this.singleTear.width * 2, this.singleTear.height * 2);
+
+         this.tearsPool = [this.singleTear];
+         this.dropTears();
       }
       
       this.tearsGroup.setVelocityY(gameConfig.speed);
@@ -111,6 +128,19 @@ export default class GameScene extends Phaser.Scene {
       this.tearsPool = [];
    }
 
+   create () {
+      // var grid = this.add.graphics();
+      // this.drawGrid(grid);
+
+      
+
+      this.addStaticImages();
+      this.checkOrientation();
+      this.setText();
+      this.addTears();
+      this.checkSwipe();
+   }
+
    update(){
       this.tearsGroup.getChildren().forEach(function(tear){
          if(tear.y > game.config.height){
@@ -118,6 +148,7 @@ export default class GameScene extends Phaser.Scene {
             game.destroy();
 
             console.log('game over');
+            alert('game over');
 
             // setTimeout(function(){
             //    window.location.reload();

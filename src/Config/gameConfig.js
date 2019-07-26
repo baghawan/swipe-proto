@@ -9,17 +9,13 @@ export default {
       arcade: {
          debug: true,
          gravity: {
-            y: 100
+            y: 10
          },
          checkCollision: {
             down: true
          }
       }
    },
-
-   // parent: baseConfig.gameParent,
-   // width: baseConfig.gameParent.clientWidth * window.devicePixelRatio,
-   // height: baseConfig.gameParent.clientHeight * window.devicePixelRatio,
 
    scale: {
       parent: baseConfig.gameParent,

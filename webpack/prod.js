@@ -8,7 +8,7 @@ module.exports = merge(base, {
   output: {
     filename: "bundle.min.js"
   },
-  devtool: false,
+  devtool: 'source-map',
   performance: {
     maxEntrypointSize: 900000,
     maxAssetSize: 900000
