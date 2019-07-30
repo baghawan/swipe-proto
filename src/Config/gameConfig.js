@@ -8,9 +8,9 @@ export default {
       default: 'arcade',
       arcade: {
          debug: true,
-         gravity: {
-            y: 10
-         },
+         // gravity: {
+         //    y: 100
+         // },
          checkCollision: {
             down: true
          }
@@ -24,14 +24,4 @@ export default {
       width: baseConfig.w,
       height: baseConfig.h,
    },
-
-   level: 1,
-   score: 0,
-   gameOver: false,
-   safeZones: 3,
-
-   speed: 100,
-   gap: 400,
-   
-   multiplier: 0.5
 };
