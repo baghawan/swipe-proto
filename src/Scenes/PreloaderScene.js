@@ -14,6 +14,7 @@ export default class PreloaderScene extends Phaser.Scene {
       console.log('Enter scene ' + this.scene.key)
 
       var assets_image_url = baseConfig.assets_url + 'images/';
+      var assets_sprites_url = baseConfig.assets_url + 'sprites/';
       var assets_sounds_url = baseConfig.assets_url + 'sounds/';
       var width = this.cameras.main.centerX;
       var height = this.cameras.main.centerY;
@@ -84,10 +85,37 @@ export default class PreloaderScene extends Phaser.Scene {
 
       this.timedEvent = this.time.delayedCall(1000, this.ready, [], this);
 
+      // load images
       this.load.image('background', assets_image_url + 'bg.jpg');
       this.load.image('character', assets_image_url + 'idle.png');
       this.load.image('ekspresi-idle', assets_image_url + 'ekspresi-idle.png');
-      this.load.audio('bgMusic', [assets_sounds_url + 'TownTheme.mp3']);
+
+
+      // load sprites
+      this.load.spritesheet('obstacle', assets_sprites_url + 'heart.png', {
+         frameWidth: 158,
+         frameHeight: 120
+      });
+      
+      this.load.spritesheet('ekspresi-3', assets_sprites_url + 'ekspresi-3.png', {
+         frameWidth: 630,
+         frameHeight: 750
+      });
+
+      this.load.spritesheet('ekspresi-3', assets_sprites_url + 'ekspresi-3.png', {
+         frameWidth: 630,
+         frameHeight: 750
+      });
+
+      this.load.spritesheet('trans-3-4', assets_sprites_url + 'trans-3-4.png', {
+         frameWidth: 630,
+         frameHeight: 750
+      });
+
+      this.load.spritesheet('ekspresi-4', assets_sprites_url + 'ekspresi-4.png', {
+         frameWidth: 630,
+         frameHeight: 750
+      });
 
       this.load.svg('tear', assets_image_url + 'tear.svg', {
          width: 60 * baseConfig.scaleRatio,

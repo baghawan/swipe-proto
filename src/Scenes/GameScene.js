@@ -15,7 +15,9 @@ let score = 0,
     dropPerLevel = 6,
     dropRateMultiplier = 100,
     dropRateMin = 2000,
-    dropRateMax = 3000;
+    dropRateMax = 3000,
+
+    points = [];
 
 let colliderActivated;
 
@@ -63,18 +65,122 @@ export default class GameScene extends Phaser.Scene {
          }
       }.bind(this));
    }
-   
-   checkSwipe(){
-      this.input.on('gameobjectmove', function(pointer, gameObject, event){
-         gameObject.disableBody(true, true);
-         isSwiped++;
-         console.log(gameObject)
 
+   createSlashEffect(coordX, coordY, angle){
+      var slashes = this.add.graphics();
+
+      slashes.clear();
+      slashes.setDepth(3);
+      slashes.fillStyle(0x00ff00, 1);
+      
+      slashes.beginPath();
+
+      slashes.arc(coordX, coordY, 70, Phaser.Math.DegToRad(180), Phaser.Math.DegToRad(270), false);
+      
+      slashes.fillPath();
+      slashes.closePath();
+      console.log(slashes)
+   }
+
+   addStaticImages(){
+      this.bg = this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, 'background');
+      this.character = this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, 'character');
+
+      let scaleBgX = this.cameras.main.width / this.bg.width
+      let scaleBgY = this.cameras.main.height / this.bg.height
+
+      this.scaleCharacterX = this.cameras.main.width / this.character.width * 1.2
+      this.scaleCharacterY = this.cameras.main.height / this.character.height
+
+      this.bg.setScale(Math.max(scaleBgX, scaleBgY)).setScrollFactor(0);
+      this.character.setScale(Math.max(this.scaleCharacterX, this.scaleCharacterY)).setScrollFactor(0);
+      
+   }
+
+   addEkspresi(){
+      var scaleNum = (Math.max(this.scaleCharacterX, this.scaleCharacterY));
+      this.anims.create({
+         key: 'cry-3',
+         frames: 'ekspresi-3',
+         frameRate: 10,
+         repeat: 2
+      });
+
+      this.anims.create({
+         key: 'cry-transition-3-4',
+         frames: 'trans-3-4',
+         frameRate: 10,
+         repeat: -1
+      });
+
+      // this.ekspresi3 = this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, 'ekspresi-idle');
+      // this.ekspresi3.setScale(Math.max(this.scaleCharacterX, this.scaleCharacterY)).setScrollFactor(0);
+
+      this.ekspresi3 = this.add.sprite(this.cameras.main.centerX, this.cameras.main.centerY, 'cry-3').setScale(scaleNum).setScrollFactor(0);
+
+      this.ekspresi3.play('cry-3');
+      this.ekspresi3.anims.chain('cry-transition-3-4');
+
+      
+   }
+
+   addTears(){
+      this.tears = this.physics.add.group();
+      this.generateTears(this);
+   }
+
+   generateTears(){
+      let tearLeftXPosition = (this.cameras.main.width - this.ekspresi3.displayWidth) / 2
+      let tearRightXPosition = this.ekspresi3.displayWidth + (this.ekspresi3.displayOriginX * 0.45)
+
+      this.tearLeft = this.time.addEvent({
+         delay: Phaser.Math.Between(dropRateMin, dropRateMax),
+         callback: () => {
+             // spawn left tear
+            this.singleTearLeft = this.tears.create(tearLeftXPosition, baseConfig.h * 9/20, 'tear').setInteractive();
+            this.singleTearLeft.setGravityY(gravity).setAccelerationY(speed).setVelocityX(-(Math.random() * (70 - 1) + 1)).setMass(20)
+            this.singleTearLeft.input.hitArea.setTo(this.singleTearLeft.width / 2, this.singleTearLeft.height / 2, this.singleTearLeft.width * 3, this.singleTearLeft.height * 3);
+            
+         },
+         callbackScope: this,
+         repeat: (dropPerLevel / 2) - 1
+      })
+
+      this.tearRight = this.time.addEvent({
+         delay: Phaser.Math.Between(dropRateMin, dropRateMax),
+         callback: () => {
+             // spawn right tear
+            this.singleTearRight = this.tears.create(tearRightXPosition, baseConfig.h * 9/20, 'tear').setInteractive();
+            this.singleTearRight.setGravityY(gravity).setAccelerationY(speed).setVelocityX((Math.random() * (70 - 1) + 1)).setMass(20)
+            this.singleTearRight.input.hitArea.setTo(this.singleTearRight.width / 2, this.singleTearRight.height / 2, this.singleTearRight.width * 3, this.singleTearRight.height * 3);
+         },
+         callbackScope: this,
+         repeat: (dropPerLevel / 2) - 1
+      })
+
+      // this.tearLeft.setDragY(200);
+   }
+
+   addObstacle(){
+      this.obstacle = this.add.sprite(this.cameras.main.centerX, 0, 'obstacle', 0)
+                              .setScale(1 * baseConfig.scaleRatio, 1 * baseConfig.scaleRatio);
+   }
+
+   generateObstacle(){}
+
+   checkSwipe(){
+      
+      this.input.on('gameobjectmove', function(pointer, gameObject, event){
+         console.log(pointer)
+         console.log(gameObject.texture)
+
+         gameObject.disableBody(true, true);
+
+         isSwiped++;
+      
          score += 100;
          speed += 100;
-         scoreText.setText(score + 'pts');
-
-         
+         scoreText.setText(score + 'pts'); 
 
          if (isSwiped === dropPerLevel){
             console.log('Level ' + level + ' completed !');
@@ -102,61 +208,8 @@ export default class GameScene extends Phaser.Scene {
             this.scene.tearRight.remove()
             this.scene.generateTears(this);
          }
+         
 		});
-   }
-
-   addStaticImages(){
-      this.bg = this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, 'background');
-      this.character = this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, 'character');
-      this.ekspresi = this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, 'ekspresi-idle');
-
-
-      let scaleBgX = this.cameras.main.width / this.bg.width
-      let scaleBgY = this.cameras.main.height / this.bg.height
-
-      let scaleCharacterX = this.cameras.main.width / this.character.width * 1.2
-      let scaleCharacterY = this.cameras.main.height / this.character.height
-
-      this.bg.setScale(Math.max(scaleBgX, scaleBgY)).setScrollFactor(0);
-      this.character.setScale(Math.max(scaleCharacterX, scaleCharacterY)).setScrollFactor(0);
-      this.ekspresi.setScale(Math.max(scaleCharacterX, scaleCharacterY)).setScrollFactor(0);
-   }
-
-   addTears(){
-      this.tears = this.physics.add.group();
-      this.generateTears(this);
-   }
-
-   generateTears(){
-      let tearLeftXPosition = (this.cameras.main.width - this.ekspresi.displayWidth) / 2
-      let tearRightXPosition = this.ekspresi.displayWidth + (this.ekspresi.displayOriginX * 0.45)
-
-      this.tearLeft = this.time.addEvent({
-         delay: Phaser.Math.Between(dropRateMin, dropRateMax),
-         callback: () => {
-             // spawn left tear
-            this.singleTearLeft = this.tears.create(tearLeftXPosition, baseConfig.h * 9/20, 'tear').setInteractive();
-            this.singleTearLeft.setGravityY(gravity).setAccelerationY(speed).setVelocityX((Math.random() * (70 - (-70)) + (-70))).setMass(20)
-            this.singleTearLeft.input.hitArea.setTo(this.singleTearLeft.width / 2, this.singleTearLeft.height / 2, this.singleTearLeft.width * 3, this.singleTearLeft.height * 3);
-            
-         },
-         callbackScope: this,
-         repeat: (dropPerLevel / 2) - 1
-      })
-
-      this.tearRight = this.time.addEvent({
-         delay: Phaser.Math.Between(dropRateMin, dropRateMax),
-         callback: () => {
-             // spawn right tear
-            this.singleTearRight = this.tears.create(tearRightXPosition, baseConfig.h * 9/20, 'tear').setInteractive();
-            this.singleTearRight.setGravityY(gravity).setAccelerationY(speed).setVelocityX(-(Math.random() * (70 - (-70)) + (-70))).setMass(20)
-            this.singleTearRight.input.hitArea.setTo(this.singleTearRight.width / 2, this.singleTearRight.height / 2, this.singleTearRight.width * 3, this.singleTearRight.height * 3);
-         },
-         callbackScope: this,
-         repeat: (dropPerLevel / 2) - 1
-      })
-
-      // this.tearLeft.setDragY(200);
    }
 
    createBarrier(){
@@ -171,26 +224,37 @@ export default class GameScene extends Phaser.Scene {
 
       colliderActivated = false;
       console.log('game over');
+      alert('game over');
       
       gameConfig.gameOver = true;
       game.destroy();
-    }
+   }
 
    create () {
       // var grid = this.add.graphics();
       // this.drawGrid(grid);
+      
 
       this.createBarrier();
       this.addStaticImages();
+      this.addEkspresi();
+
       this.checkOrientation();
       this.setText();
 
+      // this.addObstacle();
       this.addTears();
       this.checkSwipe();
+
+      
       
    }
 
    update(){
+      
+
+      
+
       this.tears.getChildren().forEach(function(tear){
          // if(tear.y > this.getBottomBarrier()){
          //    gameConfig.gameOver = true;
