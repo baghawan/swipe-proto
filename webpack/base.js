@@ -6,6 +6,14 @@ const CleanWebpackPlugin = require("clean-webpack-plugin");
 module.exports = {
    mode: "development",
    devtool: "eval-source-map",
+   devServer: {
+      headers: {
+         'Access-Control-Allow-Origin': '*',
+         'Access-Control-Allow-Headers': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+         'Access-Control-Allow-Methods': 'X-Requested-With, content-type, Authorization',
+         https: true
+      },
+   },
    module: {
       rules: [
          {

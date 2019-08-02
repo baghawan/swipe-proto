@@ -1,13 +1,22 @@
 import "phaser";
 import baseConfig from "../Config/baseConfig";
 
+let username,
+    userthumb,
+    usertoken;
+
 export default class PreloaderScene extends Phaser.Scene {
    constructor () {
      super('Preloader');
    }
 
-   init () {
+   init (data) {
       this.readyCount = 0;
+      this.cameras.main.setBackgroundColor(0xfff1c4)
+      
+      username = data.userData.name.first;
+      userthumb = data.userData.picture.large; //128px
+      usertoken = data.userData.registered.age;
    }
   
    preload () {
@@ -16,18 +25,16 @@ export default class PreloaderScene extends Phaser.Scene {
       var assets_image_url = baseConfig.assets_url + 'images/';
       var assets_sprites_url = baseConfig.assets_url + 'sprites/';
       var assets_sounds_url = baseConfig.assets_url + 'sounds/';
+
       var width = this.cameras.main.centerX;
       var height = this.cameras.main.centerY;
-
-      // add logo image
-      // var sadboi = this.add.image(this.cameras.main.centerX, this.cameras.main.centerY - 200, 'sadboi');
 
       // display progress bar
       var progressBar = this.add.graphics();
       var progressBox = this.add.graphics();
 
-      progressBox.fillStyle(0x999999, 0.8);
-      progressBox.fillRect((width) - 160, (height * 0.95) + 30, 320, 5); 
+      progressBox.fillStyle(0x767184, 0.8);
+      progressBox.fillRect((width) - 170, (height * 0.95) + 30, 340, 5); 
 
       // display loading percentage text
       var percentText = this.make.text({
@@ -35,19 +42,19 @@ export default class PreloaderScene extends Phaser.Scene {
          y: height * 0.95 - 5,
          text: 'Loading... 0%',
          style: {
-            font: '24px monospace',
-            fill: '#000'
+            font: '28px kidsrock',
+            fill: '#767184'
          }
       });
 
       // display loading assets text
       var assetText = this.make.text({
          x: width,
-         y: height * 0.95 + 70,
+         y: this.cameras.main.height - 140,
          text: '',
          style: {
-            font: '24px monospace',
-            fill: '#000'
+            font: '24px kidsrock',
+            fill: '#e19bf3'
          }
       });
 
@@ -58,8 +65,8 @@ export default class PreloaderScene extends Phaser.Scene {
       this.load.on('progress', function (value) {
          percentText.setText('Loading... ' + parseInt(value * 100) + '%');
          progressBar.clear();
-         progressBar.fillStyle(0x000000, 1);
-         progressBar.fillRect((width) - 160, (height * 0.95) + 30, 320 * value, 5);
+         progressBar.fillStyle(0xe19bf3, 1);
+         progressBar.fillRect((width) - 170, (height * 0.95) + 30, 340 * value, 5);
       });
 
       // update file progress text
@@ -86,48 +93,36 @@ export default class PreloaderScene extends Phaser.Scene {
       this.timedEvent = this.time.delayedCall(1000, this.ready, [], this);
 
       // load images
+      this.load.image('nuLogo', assets_image_url + 'nulogo.png');
       this.load.image('background', assets_image_url + 'bg.jpg');
+      this.load.image('leaves', assets_image_url + 'leaves.png');
       this.load.image('character', assets_image_url + 'idle.png');
-      this.load.image('ekspresi-idle', assets_image_url + 'ekspresi-idle.png');
+      this.load.image('userthumb', userthumb);
 
 
       // load sprites
       this.load.spritesheet('obstacle', assets_sprites_url + 'heart.png', {
-         frameWidth: 158,
-         frameHeight: 120
-      });
-      
-      this.load.spritesheet('ekspresi-3', assets_sprites_url + 'ekspresi-3.png', {
-         frameWidth: 630,
-         frameHeight: 750
+         frameWidth: 118,
+         frameHeight: 90
       });
 
-      this.load.spritesheet('ekspresi-3', assets_sprites_url + 'ekspresi-3.png', {
-         frameWidth: 630,
-         frameHeight: 750
-      });
-
-      this.load.spritesheet('trans-3-4', assets_sprites_url + 'trans-3-4.png', {
-         frameWidth: 630,
-         frameHeight: 750
-      });
-
-      this.load.spritesheet('ekspresi-4', assets_sprites_url + 'ekspresi-4.png', {
-         frameWidth: 630,
-         frameHeight: 750
-      });
+      this.load.multiatlas('expression', assets_sprites_url + 'expressions/expression.json', assets_sprites_url + 'expressions');
 
       this.load.svg('tear', assets_image_url + 'tear.svg', {
-         width: 60 * baseConfig.scaleRatio,
-         height: 60 * baseConfig.scaleRatio
+         width: 100 * baseConfig.scaleRatio,
+         height: 100 * baseConfig.scaleRatio
       })
    }
 
-   ready () {
+   create(){
+      
+   }
+
+   ready (data) {
       this.readyCount++;
 
       if (this.readyCount === 2) {
-         this.scene.start('Game');
+         this.scene.start('Game', {username, usertoken});
       }
    }
 };

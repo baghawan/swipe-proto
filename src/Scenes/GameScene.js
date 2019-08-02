@@ -8,22 +8,41 @@ let score = 0,
     level = 1,
     levelText,
     slashes,
+    obstacle,
     gameOver,
     isSwiped = 0,
-    gravity = 200,
-    speed = 100,
-    dropPerLevel = 6,
+    gravity = 250,
+    speed = 80,
+    dropPerLevel = 4,
     dropRateMultiplier = 100,
-    dropRateMin = 2000,
-    dropRateMax = 3000,
-
+    dropRateMin = 3000,
+    dropRateMax = 4000,
+    expression,
     points = [];
 
 let colliderActivated;
 
+var animsIntro = [
+   "idle",
+   "trans_idle-1",
+   "stage-1",
+   "trans_1-2",
+   "stage-2",
+   "trans_2-3",
+   "stage-3",
+   "trans_3-4"
+];
+
 export default class GameScene extends Phaser.Scene {
    constructor () {
      super('Game');
+   }
+
+   init(data){
+      console.log(data)
+
+      this.usernameData = data.username;
+      this.usertokenData = data.usertoken;
    }
   
    preload () {
@@ -42,12 +61,78 @@ export default class GameScene extends Phaser.Scene {
       graphics.setDepth(1);
    }
 
-   setText(){
-      levelText = this.add.text(30, 40, 'Level: ' + level, { fontSize: 14 * window.devicePixelRatio + 'px', fill: '#000' });
-      scoreText = this.add.text(baseConfig.w - 230, 30, score + 'pts', { fontSize: 14 * window.devicePixelRatio + 'px', fill: '#000' });
+   setNuLogo(){
+      this.logo = this.add.image(150 * baseConfig.scaleRatio, 100 * baseConfig.scaleRatio, 'nuLogo')
+      this.logo.setScale(1 * baseConfig.scaleRatio);
+      // this.logo.setOrigin(0, 0);
+   }
 
-      scoreText.setFixedSize(200, 45);
-      scoreText.setAlign('right');
+   setUserThumbnail(){
+      this.userThumb = this.add.image(this.cameras.main.width - (100 * baseConfig.scaleRatio), (100 * baseConfig.scaleRatio), 'userthumb')
+      this.userThumb.setScale(1 * baseConfig.scaleRatio, 1 * baseConfig.scaleRatio);
+      // this.userThumb.setOrigin(1, 0);
+
+      this.shape = this.make.graphics().fillCircle(this.userThumb.x, this.userThumb.y, (this.userThumb.width / 2) * baseConfig.scaleRatio);
+      var mask = this.shape.createGeometryMask();
+      this.userThumb.setMask(mask);
+   }
+
+   setUserName(){
+      console.log(this.userThumb)
+      this.userName = this.add.text(this.userThumb.x - (this.userThumb.displayWidth / 2), this.userThumb.y - 35, this.usernameData, {
+         fontFamily: 'kidsrock',
+         fontSize: 14 * window.devicePixelRatio + 'px',
+         color: '#fff',
+         stroke: '#000',
+         strokeThickness: 4,
+         padding: {
+            right: 20
+         }
+      });
+      this.userName.setOrigin(1, 0)
+   }
+
+   setToken(){
+      this.userToken = this.add.text(this.userThumb.x - (this.userThumb.displayWidth / 2), this.userThumb.y + 5, this.usertokenData + ' token', {
+         fontFamily: 'kidsrock',
+         fontSize: 14 * window.devicePixelRatio + 'px',
+         color: '#f7ed6b',
+         stroke: '#000',
+         strokeThickness: 4,
+         padding: {
+            right: 20
+         }
+      });
+      this.userToken.setOrigin(1, 0)
+   }
+
+   addHeader(){
+      this.setNuLogo();
+      this.setUserThumbnail();
+      this.setUserName();
+      this.setToken();
+   }
+
+   setText(){
+      this.scoreStaticText = this.add.text(this.cameras.main.centerX, this.cameras.main.centerY * 1/4, 'score', {
+         fontFamily: 'kidsrock',
+         fontSize: 28 * window.devicePixelRatio + 'px',
+         color: '#f7ed6b',
+         stroke: '#000',
+         strokeThickness: 4,
+      });
+
+      scoreText = this.add.text(this.cameras.main.centerX, this.cameras.main.centerY * 1/4 + this.scoreStaticText.height + 20, '0', {
+         fontFamily: 'kidsrock',
+         fontSize: 42 * window.devicePixelRatio + 'px',
+         color: '#f7ed6b',
+         stroke: '#000',
+         strokeThickness: 4,
+      });
+      this.scoreStaticText.setOrigin(0.5, 0.5);
+      scoreText.setOrigin(0.5, 0.5);
+
+
    }
 
    checkOrientation(){
@@ -85,6 +170,7 @@ export default class GameScene extends Phaser.Scene {
    addStaticImages(){
       this.bg = this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, 'background');
       this.character = this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, 'character');
+      this.leaves = this.add.image(this.cameras.main.width, 0, 'leaves');
 
       let scaleBgX = this.cameras.main.width / this.bg.width
       let scaleBgY = this.cameras.main.height / this.bg.height
@@ -94,52 +180,128 @@ export default class GameScene extends Phaser.Scene {
 
       this.bg.setScale(Math.max(scaleBgX, scaleBgY)).setScrollFactor(0);
       this.character.setScale(Math.max(this.scaleCharacterX, this.scaleCharacterY)).setScrollFactor(0);
+      this.leaves.setScale(Math.max(scaleBgX, scaleBgY)).setScrollFactor(0);
+      this.leaves.setOrigin(1, 0.25);
       
+   }
+
+   getFrame(prefix){
+      this.frameName = this.anims.generateFrameNames('expression', {
+         start: 0, end: 14, zeroPad: 5,
+         prefix: `${prefix}/${prefix}_`, suffix: '.png'
+      });
+
+      return this.frameName
+   }
+
+   createAnims(){
+      var fps = 15,
+          transCount = 1;
+
+      this.anims.create({
+         key: 'idle',
+         frames: this.anims.generateFrameNames('expression', {
+            start: 0, end: 29, zeroPad: 5,
+            prefix: 'Idle/Idle_', suffix: '.png'
+         }),
+         frameRate: fps,
+         repeat: 1
+      });
+
+      this.anims.create({
+         key: 'trans_idle-1', frames: this.getFrame('Between Idle - 1'), frameRate: fps,
+      });
+
+      this.anims.create({
+         key: 'stage-1', frames: this.getFrame('Stage 1'), frameRate: fps
+      });
+
+      this.anims.create({
+         key: 'trans_1-2', frames: this.getFrame('Between 1 - 2'), frameRate: fps,
+      });
+
+      this.anims.create({
+         key: 'stage-2', frames: this.getFrame('Stage 2'), frameRate: 30
+      });
+
+      this.anims.create({
+         key: 'trans_2-3', frames: this.getFrame('Between 2 - 3'), frameRate: fps,
+      });
+
+      this.anims.create({
+         key: 'stage-3', frames: this.getFrame('Stage 3'), frameRate: 30
+      });
+
+      this.anims.create({
+         key: 'trans_3-4', frames: this.getFrame('Between 3 - 4'), frameRate: fps,
+      });
+
+      this.anims.create({
+         key: 'stage-4', frames: this.getFrame('Stage 4'), frameRate: fps, repeat: -1
+      });
+
+      this.anims.create({
+         key: 'trans_4-5', frames: this.getFrame('Between 4 - 5'), frameRate: fps
+      });
+
+      this.anims.create({
+         key: 'stage-5', frames: this.getFrame('Stage 5'), frameRate: fps, repeat: -1
+      });
+
+      this.anims.create({
+         key: 'trans_5-shock', frames: this.getFrame('Between 5 - Shock'), frameRate: fps,
+      });
+
+      this.anims.create({
+         key: 'shock', frames: this.getFrame('Shock'), frameRate: fps, repeat: -1
+      });
    }
 
    addEkspresi(){
       var scaleNum = (Math.max(this.scaleCharacterX, this.scaleCharacterY));
-      this.anims.create({
-         key: 'cry-3',
-         frames: 'ekspresi-3',
-         frameRate: 10,
-         repeat: 2
-      });
+      this.createAnims.call(this);
 
-      this.anims.create({
-         key: 'cry-transition-3-4',
-         frames: 'trans-3-4',
-         frameRate: 10,
-         repeat: -1
-      });
+      expression = this.add.sprite(this.cameras.main.centerX, this.cameras.main.centerY, 'expression', 'Idle/Idle_00000.png');
+      expression.setScale(scaleNum);
 
-      // this.ekspresi3 = this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, 'ekspresi-idle');
-      // this.ekspresi3.setScale(Math.max(this.scaleCharacterX, this.scaleCharacterY)).setScrollFactor(0);
+      expression.play(animsIntro.shift())
+      expression.on("animationcomplete", function(anim){
+         var intro = animsIntro.shift();
 
-      this.ekspresi3 = this.add.sprite(this.cameras.main.centerX, this.cameras.main.centerY, 'cry-3').setScale(scaleNum).setScrollFactor(0);
-
-      this.ekspresi3.play('cry-3');
-      this.ekspresi3.anims.chain('cry-transition-3-4');
-
-      
+         if (intro) {
+            this.play(intro);
+            
+         } else {
+            this.off('animationcomplete', this.scene.addTears(this));
+         }
+      })
    }
 
    addTears(){
-      this.tears = this.physics.add.group();
+      expression.play('stage-4');
+
+      
       this.generateTears(this);
    }
 
    generateTears(){
-      let tearLeftXPosition = (this.cameras.main.width - this.ekspresi3.displayWidth) / 2
-      let tearRightXPosition = this.ekspresi3.displayWidth + (this.ekspresi3.displayOriginX * 0.45)
+      let tearLeftXPosition = (this.cameras.main.width - expression.displayWidth) / 2
+      let tearRightXPosition = expression.displayWidth + (expression.displayOriginX * 0.5)
 
       this.tearLeft = this.time.addEvent({
          delay: Phaser.Math.Between(dropRateMin, dropRateMax),
          callback: () => {
              // spawn left tear
-            this.singleTearLeft = this.tears.create(tearLeftXPosition, baseConfig.h * 9/20, 'tear').setInteractive();
-            this.singleTearLeft.setGravityY(gravity).setAccelerationY(speed).setVelocityX(-(Math.random() * (70 - 1) + 1)).setMass(20)
+            this.singleTearLeft = this.tears.create(tearLeftXPosition, baseConfig.h * 9/19, 'tear').setFlipX(true).setInteractive();
             this.singleTearLeft.input.hitArea.setTo(this.singleTearLeft.width / 2, this.singleTearLeft.height / 2, this.singleTearLeft.width * 3, this.singleTearLeft.height * 3);
+
+            this.singleTearLeft.setGravityY(gravity)
+                               .setAngle(40)
+                               .setAccelerationY(speed)
+                               .setVelocityX(-(Math.random() * (70 - 20) + 20))
+                               .setAngularVelocity(-15)
+                               .setMass(20)
+            
             
          },
          callbackScope: this,
@@ -150,65 +312,115 @@ export default class GameScene extends Phaser.Scene {
          delay: Phaser.Math.Between(dropRateMin, dropRateMax),
          callback: () => {
              // spawn right tear
-            this.singleTearRight = this.tears.create(tearRightXPosition, baseConfig.h * 9/20, 'tear').setInteractive();
-            this.singleTearRight.setGravityY(gravity).setAccelerationY(speed).setVelocityX((Math.random() * (70 - 1) + 1)).setMass(20)
+            this.singleTearRight = this.tears.create(tearRightXPosition, baseConfig.h * 9/19, 'tear').setInteractive();
             this.singleTearRight.input.hitArea.setTo(this.singleTearRight.width / 2, this.singleTearRight.height / 2, this.singleTearRight.width * 3, this.singleTearRight.height * 3);
+
+            this.singleTearRight.setGravityY(gravity)
+                                .setAngle(-40)
+                                .setAccelerationY(speed)
+                                .setVelocityX((Math.random() * (70 - 20) + 20))
+                                .setAngularVelocity(15)
+                                .setMass(20)
+            
          },
          callbackScope: this,
          repeat: (dropPerLevel / 2) - 1
       })
-
-      // this.tearLeft.setDragY(200);
    }
 
    addObstacle(){
-      this.obstacle = this.add.sprite(this.cameras.main.centerX, 0, 'obstacle', 0)
-                              .setScale(1 * baseConfig.scaleRatio, 1 * baseConfig.scaleRatio);
-   }
+      this.obstacleSpawn = this.time.addEvent({
+         delay: Phaser.Math.Between(5000, 10000),
+         callback: () => {
+            var randomX = Phaser.Math.Between(this.cameras.main.width * 1/3, this.cameras.main.width * 2/3);
+            var randomY = Phaser.Math.Between(0, this.cameras.main.height * 1/3);
 
-   generateObstacle(){}
+            // spawn obstacle
+            obstacle = this.physics.add.sprite(randomX, randomY, 'obstacle', 0);
+
+            obstacle.setInteractive();
+            obstacle.setScale(1 * baseConfig.scaleRatio, 1 * baseConfig.scaleRatio);
+
+            obstacle.setVelocity(Phaser.Math.Between(-100, 100), 100);
+            obstacle.setGravityY(50);
+            obstacle.setAngularVelocity(Phaser.Math.Between(-20, 20));
+            
+         },
+         callbackScope: this,
+         repeat: -1
+      })
+   }
 
    checkSwipe(){
       
       this.input.on('gameobjectmove', function(pointer, gameObject, event){
-         console.log(pointer)
-         console.log(gameObject.texture)
+         if(gameObject.texture.key !== 'obstacle'){
+            gameObject.disableBody(true, true);
 
-         gameObject.disableBody(true, true);
+            isSwiped++;
+         
+            score += 100;
+            speed += 20;
+            scoreText.setText(score); 
 
-         isSwiped++;
-      
-         score += 100;
-         speed += 100;
-         scoreText.setText(score + 'pts'); 
+            if (isSwiped === dropPerLevel){
+               console.log('Level ' + level + ' completed !');
 
-         if (isSwiped === dropPerLevel){
-            console.log('Level ' + level + ' completed !');
-            
+               isSwiped -= dropPerLevel;
 
-            isSwiped -= dropPerLevel;
+               if(dropRateMin < 1200){
+                  dropRateMin === 1200;
 
-            if(dropRateMin < 1200){
-               dropRateMin === 1200;
+               } else if(dropRateMax < 2200){
+                  dropRateMax === 2200;
 
-            } else if(dropRateMax < 2200){
-               dropRateMax === 2200;
+               } else {
+                  dropRateMin -= dropRateMultiplier;
+                  dropRateMax -= dropRateMultiplier;
+               }
 
-            } else {
-               dropRateMin -= dropRateMultiplier;
-               dropRateMax -= dropRateMultiplier;
+               level += 1;
+
+               if(level === 5){
+                  this.scene.addObstacle(this);
+                  expression.play('trans_4-5')
+                  expression.anims.chain('stage-5')
+               }
+
+               console.log(dropRateMin, dropRateMax);
+
+               this.scene.tearLeft.remove()
+               this.scene.tearRight.remove()
+               this.scene.generateTears(this);
             }
 
-            level += 1;
-            levelText.setText('Level: ' + level);
+         } else {
+            console.log(gameObject)
+            gameObject.disableInteractive();
 
-            console.log(dropRateMin, dropRateMax);
+            score -= 50;
 
-            this.scene.tearLeft.remove()
-            this.scene.tearRight.remove()
-            this.scene.generateTears(this);
+            if(score < 0){
+               scoreText.setText('0'); 
+
+            } else {
+               scoreText.setText(score); 
+            }
+
+            gameObject.setFrame(1)
+
+            gameObject.setVelocity(0,0);
+            gameObject.setGravityY(0);
+            gameObject.setAngularVelocity(0);
+
+            this.scene.tweens.add({
+               delay: 1000,
+               targets: gameObject,
+               alpha: 0,
+               duration: 400,
+               ease: 'Power1'
+            }, this);
          }
-         
 		});
    }
 
@@ -221,19 +433,29 @@ export default class GameScene extends Phaser.Scene {
    }
 
    hitBottomBarrier(){
+      expression.play('trans_5-shock')
+      expression.anims.chain('shock')
 
       colliderActivated = false;
-      console.log('game over');
-      alert('game over');
-      
       gameConfig.gameOver = true;
-      game.destroy();
+
+      this.input.off('gameobjectmove');
+
+      console.log('game over');
+
+      setTimeout(function(){
+         alert('game over');
+         game.destroy();
+      }, 3000)
    }
 
    create () {
+
       // var grid = this.add.graphics();
       // this.drawGrid(grid);
+      this.cameras.main.setBackgroundColor(0xfff1c4)
       
+      this.tears = this.physics.add.group();
 
       this.createBarrier();
       this.addStaticImages();
@@ -241,38 +463,16 @@ export default class GameScene extends Phaser.Scene {
 
       this.checkOrientation();
       this.setText();
-
-      // this.addObstacle();
-      this.addTears();
       this.checkSwipe();
-
       
-      
+      this.addHeader();
    }
 
    update(){
-      
-
-      
-
       this.tears.getChildren().forEach(function(tear){
-         // if(tear.y > this.getBottomBarrier()){
-         //    gameConfig.gameOver = true;
-         //    game.destroy();
-
-         //    console.log('game over');
-         //    // alert('game over');
-
-         //    // setTimeout(function(){
-         //    //    window.location.reload();
-         //    // }, 500)
-         // }
-
          this.physics.world.collide(tear, [this.barrier], this.hitBottomBarrier, ()=>{
             return colliderActivated;
           }, this);
       }, this);
-
-      
    }
 };
